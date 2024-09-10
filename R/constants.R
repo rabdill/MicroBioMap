@@ -1,13 +1,15 @@
 .versions <- c(
     '1.0.0',
-    '1.0.1'
+    '1.0.1',
+    '1.1.0'
 )
 # Describes the IDs assigned by Zenodo to each compendium release.
 # Should be determined from the release's URL:
 # https://zenodo.org/records/{ID IS HERE}
 .record_ids <- c(
     '8431937',  # 1.0.0
-    '10452633'  # 1.0.1
+    '10452633', # 1.0.1
+    '13733642'  # 1.1.0
 )
 
 # Uses the data above to build URLs for the files needed

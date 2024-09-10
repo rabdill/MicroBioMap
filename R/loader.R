@@ -37,7 +37,7 @@
 #' head(colData(cpd))
 #'
 
-getCompendium <- function(version='1.0.1', bfc = BiocFileCache::BiocFileCache()) {
+getCompendium <- function(version='1.1.0', bfc = BiocFileCache::BiocFileCache()) {
     dat <-.getCompendiumData(version, bfc)
     coldat <- .getCompendiumColdata(version, bfc)
 
