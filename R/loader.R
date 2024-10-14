@@ -1,12 +1,30 @@
-.getCompendiumData <- function(version, bfc) {
-    print(paste('Retrieving compendium version',version))
-    url <- .data_url[[version]]
+.getVersions <- function(bfc) {
+    # Determines the most recent version of the compendium
+    # and retrieves the manifest that describes all available releases.
+    # Returns a data.table listing all versions and the necessary URLs
+    # This requires the canonical_doi configuration value stored in
+    # constants.R, which always resolves to the most recent version.
+    print('Retrieving version information.')
+    resolve <- curl::curl_fetch_memory(canonical_doi)
+    print('Determined data address:')
+    print(resolve$url)
+    manifest <- paste0(resolve$url, '/files/manifest.csv')
+    rpath <- bfcrpath(bfc, manifest)
+    results <- data.table::fread(rpath)
+    colnames(results) <- c('version','zenodo_id','default')
+    results$data_url <- paste0('https://zenodo.org/record/', results$zenodo_id, '/files/taxonomic_table.csv.gz')
+    results$coldata_url <- paste0('https://zenodo.org/record/', results$zenodo_id, '/files/sample_metadata.tsv')
+    data.table::setkey(results, version)
+
+    return(results)
+}
+
+.getCompendiumData <- function(url, bfc) {
     rpath <- bfcrpath(bfc, url)
     data.table::fread(rpath)
 }
 
-.getCompendiumColdata <- function(version, bfc) {
-    url <- .coldata_url[[version]]
+.getCompendiumColdata <- function(url, bfc) {
     rpath <- bfcrpath(bfc, url)
     sampdat <- as.data.frame(data.table::fread(rpath))
     rownames(sampdat) <- paste(sampdat[[2]], sampdat[[3]], sep = "_")
@@ -19,7 +37,7 @@
 #'
 #' @returns a `TreeSummarizedExperiment`
 #'
-#' @importFrom data.table fread
+#' @importFrom data.table fread setkey
 #' @importClassesFrom Matrix TsparseMatrix
 #' @import TreeSummarizedExperiment
 #' @import R.utils
@@ -37,9 +55,18 @@
 #' head(colData(cpd))
 #'
 
-getCompendium <- function(version='1.1.0', bfc = BiocFileCache::BiocFileCache()) {
-    dat <-.getCompendiumData(version, bfc)
-    coldat <- .getCompendiumColdata(version, bfc)
+
+getCompendium <- function(version=NA, bfc = BiocFileCache::BiocFileCache()) {
+    versions <- .getVersions(bfc)
+
+    if(is.na(version)) {
+        # If the user has not specified a version, grab whichever
+        # is indicated in the manifest as the default (i.e. most recent)
+        version <- versions[versions$default,]$version[1]
+    }
+    print(paste('Retrieving compendium version',version))
+    dat <-.getCompendiumData(versions[version]$data_url, bfc)
+    coldat <- .getCompendiumColdata(versions[version]$coldata_url, bfc)
 
     sampnames <- dat[[2]]
 
